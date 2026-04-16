@@ -48,8 +48,10 @@ router.post('/connect', async (req, res) => {
  * GET /ollama/usage
  * Get session and weekly usage statistics
  */
-router.get('/usage', async (req, res) => {
+router.post('/usage', async (req, res) => {
   try {
+    console.log("hi");
+    
     const { auth } = req.body;
 
     if (!auth) {
@@ -84,7 +86,7 @@ router.get('/usage', async (req, res) => {
  * GET /ollama/disconnect
  * Disconnect a specific public key
  */
-router.get('/disconnect', async (req, res) => {
+router.post('/disconnect', async (req, res) => {
   try {
     const { auth, enc_key } = req.body;
 
