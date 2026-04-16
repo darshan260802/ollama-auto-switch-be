@@ -13,7 +13,8 @@ export function parseUsage(html) {
   if (!html) return result;
 
   // Parse Session usage
-  const sessionMatch = html.match(/Session usage[\s\S]*?(\d+)%\s*used/);
+  const sessionMatch = html.match(/Session usage[\s\S]*?(\d+(\.\d+)?)%\s*used<\//);
+  
   if (sessionMatch) {
     result.session.usage = sessionMatch[1] + '%';
   }
@@ -26,7 +27,7 @@ export function parseUsage(html) {
   }
 
   // Parse Weekly usage
-  const weeklyMatch = html.match(/Weekly usage[\s\S]*?(\d+)%\s*used/);
+  const weeklyMatch = html.match(/Weekly usage[\s\S]*?(\d+(\.\d+)?)%\s*used<\//);
   if (weeklyMatch) {
     result.weekly.usage = weeklyMatch[1] + '%';
   }
