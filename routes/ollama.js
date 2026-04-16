@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import FormData from 'form-data';
+import axios from 'axios';
 import { parseUsage, createCookie } from '../utils/htmlParser.js';
 
 const router = Router();
@@ -24,18 +25,22 @@ router.post('/connect', async (req, res) => {
     form.append('name', name);
     form.append('public-key', atob(enc_key));
 
-    // Make request to Ollama
-    const response = await fetch('https://ollama.com/connect', {
-      method: 'POST',
+    console.log('Sending public-key:', atob(enc_key));
+
+    // Make request to Ollama using axios
+    const response = await axios.post('https://ollama.com/connect', form, {
       headers: {
         'Cookie': createCookie(auth),
         ...form.getHeaders()
       },
-      body: form
+      validateStatus: () => true
     });
 
-    // Check if successful (2xx status or redirect)
-    const isSuccess = response.ok || response.status === 302;
+    const responseHtml = response.data;
+    console.log(responseHtml);
+
+    // Check if successful - look for "Device Connected Successfully" in HTML
+    const isSuccess = responseHtml.includes('Device Connected Successfully');
 
     return res.json({ connect: isSuccess });
   } catch (error) {
@@ -50,8 +55,6 @@ router.post('/connect', async (req, res) => {
  */
 router.post('/usage', async (req, res) => {
   try {
-    console.log("hi");
-    
     const { auth } = req.body;
 
     if (!auth) {
@@ -61,14 +64,14 @@ router.post('/usage', async (req, res) => {
     }
 
     // Make request to Ollama settings
-    const response = await fetch('https://ollama.com/settings', {
-      method: 'GET',
+    const response = await axios.get('https://ollama.com/settings', {
       headers: {
         'Cookie': createCookie(auth)
-      }
+      },
+      validateStatus: () => true
     });
 
-    const html = await response.text();
+    const html = response.data;
     const usage = parseUsage(html);
 
     return res.json(usage);
@@ -101,15 +104,18 @@ router.post('/disconnect', async (req, res) => {
     const encodedKey = encodeURIComponent(enc_key);
 
     // Make request to Ollama
-    const response = await fetch(`https://ollama.com/settings/keys/${encodedKey}?type=pubkey`, {
-      method: 'GET',
+    const response = await axios.delete(`https://ollama.com/settings/keys/${encodedKey}/?type=pubkey`, {
       headers: {
         'Cookie': createCookie(auth)
-      }
+      },
+      validateStatus: () => true
     });
 
+    console.log(response.text);
+    
+
     // Check if successful
-    const isSuccess = response.ok || response.status === 302;
+    const isSuccess = response.status >= 200 && response.status < 400;
 
     return res.json({ connect: isSuccess });
   } catch (error) {
