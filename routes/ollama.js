@@ -42,7 +42,14 @@ router.post('/connect', async (req, res) => {
     // Check if successful - look for "Device Connected Successfully" in HTML
     const isSuccess = responseHtml.includes('Device Connected Successfully');
 
-    return res.json({ connect: isSuccess });
+    if (!isSuccess) {
+      // Try to extract error message from hx-swap-oob div
+      const errorMatch = responseHtml.match(/hx-swap-oob="innerHTML:#connect-error"[^>]*>([^<]*)/);
+      const errorMsg = errorMatch ? errorMatch[1].trim() : 'Connection failed';
+      return res.json({ connect: false, msg: errorMsg });
+    }
+
+    return res.json({ connect: true });
   } catch (error) {
     console.error('Connect error:', error);
     return res.json({ connect: false });
