@@ -6,12 +6,14 @@ import chalk from 'chalk';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Base URL for keep-alive ping - auto-detected from server address
-let baseUrl = null;
-
 // Keep-alive configuration
 const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000; // 14 minutes (under Render's 15 min timeout)
 const STOP_HOUR_IST = 22; // 11 PM IST
+
+// Base URL for keep-alive - use env var for production, auto-detect for local
+const DEPLOYMENT_URL = process.env.DEPLOYMENT_URL;
+let baseUrl = null;
+
 let keepAliveTimer = null;
 let isKeepAliveActive = true;
 let nextPingTime = null;
@@ -148,10 +150,15 @@ app.get('/health', (req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  const address = server.address();
-  // Handle both IPv4 and IPv6 addresses
-  const host = address.address === '::' ? 'localhost' : address.address;
-  baseUrl = `http://${host}:${address.port}`;
+  // Use env var for production, auto-detect for local dev
+  if (DEPLOYMENT_URL) {
+    baseUrl = DEPLOYMENT_URL;
+  } else {
+    const address = server.address();
+    // Handle both IPv4 and IPv6 addresses
+    const host = address.address === '::' ? 'localhost' : address.address;
+    baseUrl = `http://${host}:${address.port}`;
+  }
 
   console.log(chalk.green.bold('\n╔══════════════════════════════════════════╗'));
   console.log(chalk.green.bold('║') + chalk.white.bold('  Server running on port ') + chalk.cyan.bold(PORT) + chalk.green.bold('           ║'));
