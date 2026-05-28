@@ -12,31 +12,42 @@ export function parseUsage(html) {
 
   if (!html) return result;
 
-  // Parse Session usage
-  const sessionMatch = html.match(/Session usage[\s\S]*?(\d+(\.\d+)?)%\s*used<\//);
-  
-  if (sessionMatch) {
-    result.session.usage = sessionMatch[1] + '%';
+  // Session section
+  const sessionSectionMatch = html.match(
+    /Session usage([\s\S]*?)Weekly usage/
+  );
+
+  if (sessionSectionMatch) {
+    const section = sessionSectionMatch[1];
+
+    const usageMatch = section.match(/(\d+(?:\.\d+)?)%\s*used/);
+    if (usageMatch) {
+      result.session.usage = usageMatch[1] + '%';
+    }
+
+    const resetMatch = section.match(/Resets in\s+([^<]+)/);
+    if (resetMatch) {
+      result.session.reset = resetMatch[1].trim();
+    }
   }
 
-  // Find reset time for session (look for "Resets in" after "Session usage")
-  const sessionSection = html.substring(html.indexOf('Session usage'));
-  const sessionResetMatch = sessionSection.match(/Resets in\s+([^<]+)/);
-  if (sessionResetMatch) {
-    result.session.reset = sessionResetMatch[1].trim();
-  }
+  // Weekly section
+  const weeklySectionMatch = html.match(
+    /Weekly usage([\s\S]*)/
+  );
 
-  // Parse Weekly usage
-  const weeklyMatch = html.match(/Weekly usage[\s\S]*?(\d+(\.\d+)?)%\s*used<\//);
-  if (weeklyMatch) {
-    result.weekly.usage = weeklyMatch[1] + '%';
-  }
+  if (weeklySectionMatch) {
+    const section = weeklySectionMatch[1];
 
-  // Find reset time for weekly
-  const weeklySection = html.substring(html.indexOf('Weekly usage'));
-  const weeklyResetMatch = weeklySection.match(/Resets in\s+([^<]+)/);
-  if (weeklyResetMatch) {
-    result.weekly.reset = weeklyResetMatch[1].trim();
+    const usageMatch = section.match(/(\d+(?:\.\d+)?)%\s*used/);
+    if (usageMatch) {
+      result.weekly.usage = usageMatch[1] + '%';
+    }
+
+    const resetMatch = section.match(/Resets in\s+([^<]+)/);
+    if (resetMatch) {
+      result.weekly.reset = resetMatch[1].trim();
+    }
   }
 
   return result;
