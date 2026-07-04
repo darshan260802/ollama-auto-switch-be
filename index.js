@@ -1,7 +1,9 @@
 import express from 'express';
 import ollamaRoutes from './routes/ollama.js';
+import hookRoutes from './routes/hook.js';
 import cors from 'cors';
 import chalk from 'chalk';
+import './config/firebaseAdmin.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -142,6 +144,7 @@ app.use('/ollama', (req, res, next) => {
 
 // Routes
 app.use('/ollama', ollamaRoutes);
+app.use('/hook', hookRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

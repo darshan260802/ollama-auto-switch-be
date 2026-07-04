@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import FormData from 'form-data';
-import axios from 'axios';
-import { parseUsage, createCookie } from '../utils/htmlParser.js';
+import {
+  connectAccount,
+  disconnectAccount,
+  fetchUsage,
+} from '../services/ollamaClient.js';
 
 const router = Router();
 
@@ -20,33 +22,12 @@ router.post('/connect', async (req, res) => {
       });
     }
 
-    // Prepare form data
-    const form = new FormData();
-    form.append('name', name);
-    form.append('public-key', atob(enc_key));
-
     console.log('Sending public-key:', atob(enc_key));
 
-    // Make request to Ollama using axios
-    const response = await axios.post('https://ollama.com/connect', form, {
-      headers: {
-        'Cookie': createCookie(auth),
-        ...form.getHeaders()
-      },
-      validateStatus: () => true
-    });
+    const result = await connectAccount(auth, name, enc_key);
 
-    const responseHtml = response.data;
-    console.log(responseHtml);
-
-    // Check if successful - look for "Device Connected Successfully" in HTML
-    const isSuccess = responseHtml.includes('Device Connected Successfully');
-
-    if (!isSuccess) {
-      // Try to extract error message from hx-swap-oob div
-      const errorMatch = responseHtml.match(/hx-swap-oob="innerHTML:#connect-error"[^>]*>([^<]*)/);
-      const errorMsg = errorMatch ? errorMatch[1].trim() : 'Connection failed';
-      return res.json({ connect: false, msg: errorMsg });
+    if (!result.success) {
+      return res.json({ connect: false, msg: result.error });
     }
 
     return res.json({ connect: true });
@@ -70,16 +51,7 @@ router.post('/usage', async (req, res) => {
       });
     }
 
-    // Make request to Ollama settings
-    const response = await axios.get('https://ollama.com/settings', {
-      headers: {
-        'Cookie': createCookie(auth)
-      },
-      validateStatus: () => true
-    });
-
-    const html = response.data;
-    const usage = parseUsage(html);
+    const usage = await fetchUsage(auth);
 
     return res.json(usage);
   } catch (error) {
@@ -107,24 +79,9 @@ router.post('/disconnect', async (req, res) => {
       });
     }
 
-    // URL encode the key for the path
-    const encodedKey = encodeURIComponent(enc_key);
+    const result = await disconnectAccount(auth, enc_key);
 
-    // Make request to Ollama
-    const response = await axios.delete(`https://ollama.com/settings/keys/${encodedKey}/?type=pubkey`, {
-      headers: {
-        'Cookie': createCookie(auth)
-      },
-      validateStatus: () => true
-    });
-
-    console.log(response.text);
-    
-
-    // Check if successful
-    const isSuccess = response.status >= 200 && response.status < 400;
-
-    return res.json({ connect: isSuccess });
+    return res.json({ connect: result.success });
   } catch (error) {
     console.error('Disconnect error:', error);
     return res.json({ connect: false });
